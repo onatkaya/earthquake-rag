@@ -11,7 +11,7 @@
 
 This is a RAG-based AI assistant that answers questions about tweets from the [February 6, 2023 earthquake in Turkey](https://en.wikipedia.org/wiki/2023_Turkey%E2%80%93Syria_earthquakes).
 
-Instead of scrolling through hundreds of tweets, you can ask a question in Turkish (e.g. "Hatay'da ne tür yardımlar isteniyordu?") and the assistant will search the data and give you an answer based on what people actually posted.
+Instead of scrolling through hundreds of tweets, you can ask a question in Turkish (e.g. `"Hatay'da ne tür yardımlar isteniyordu?"`) and the assistant will search the data and give you an answer based on what people actually posted.
 
 *Everything runs locally. No data or questions leave your machine.*
 
@@ -19,22 +19,22 @@ Instead of scrolling through hundreds of tweets, you can ask a question in Turki
 
 - **RAG** (Retrieval-Augmented Generation) - answers come from real tweets, not from the model's memory, so you can trace where the answer came from.
 - **Vector Database** - tweets are converted to embeddings and stored in Chroma, so you can search by meaning.
-- **Turkish LLM and Embedding Model**
+- **LLM and Embedding Model** (`RefinedNeuro/Turkcell-LLM-7b-v1` and `mxbai-embed-large`)
 
 ## Why does this project matter?
 
-Earthquakes trigger floods of social media activity: some tweets are urgent requests for help, while others are commentary. Sorting through them manually in order to have context about some questions takes time. However, in an emergency, *time is the most valuable asset*. 
+Earthquakes trigger floods of social media activity: some tweets are urgent requests for help, while others are commentary. Sorting through them manually to get context for a question takes time, and in an emergency, *time is the most valuable asset*.
 
 This project shows how AI can pull out the important information from social media quickly.
 
-## How it works 🤖
+## How it works
 
 1. A dataset of real, pre-processed tweets from the 2023 earthquake is loaded
    (`data/dataset.csv`), each one labeled as either **"Yardım Çağrısı"**
    (a call for help) or **"Negatif İçerik"** (negative/critical content).
 2. Each tweet is converted into a format the AI can search by *meaning*,
    not just exact keywords, and stored in a local, searchable database.
-3. When someone asks a question, the system finds the k-most relevant
+3. When someone asks a question, the system finds the k most relevant
    tweets from that database. Currently, that value is set to 30.
 4. Those tweets are handed to a Turkish-language AI model, which reads
    them and writes an answer to the question, grounded in what people
@@ -46,6 +46,7 @@ This project shows how AI can pull out the important information from social med
 earthquake-rag/
 ├── README.md                    # Project documentation
 ├── LICENSE                      # MIT License
+├── .gitignore                   # Files excluded from Git
 ├── requirements.txt             # Python dependencies
 ├── src/                         # Source code directory
 │   ├── main.py                  # Main chatbot application
@@ -56,39 +57,42 @@ earthquake-rag/
 │   ├── remove_phones.py         # Redact phone numbers
 │   └── clean_text.py            # Remove emojis & problematic chars
 └── data/                        # Data directory
-    └── dataset.csv              # Pre-processed tweets
+    ├── dataset.csv              # Pre-processed tweets
+    └── upload-your-dataset-here.txt   # Placeholder note
 ```
 
 Key files:
-- src/main.py - Start the chatbot
-- src/preprocess_all.py - Run all preprocessing steps
-- data/dataset.csv - Tweet dataset (from Kaggle)
+- `src/main.py` - Start the chatbot
+- `src/preprocess_all.py` - Run all preprocessing steps
+- `data/dataset.csv` - Tweet dataset (from Kaggle)
 
 ## Dataset
 
 The dataset (`data/dataset.csv`) is a pre-processed version of the [Turkey Earthquake Relief Tweets Dataset](https://www.kaggle.com/datasets/ulkutuncerkucuktas/turkey-earthquake-relief-tweets-dataset/) from Kaggle.
 
-The final, pre-processed dataset could be downloaded and checked out [here](https://www.kaggle.com/datasets/-onatkaya1-turkey-earthquake-relief-tweets-dataset).
+The final, pre-processed dataset can be downloaded [here](https://www.kaggle.com/datasets/onatkaya1/turkey-earthquake-relief-tweets-dataset/data).
 
 ## Data Preprocessing Tools
 
-The provided dataset is already clean and ready to use. 
+**The provided dataset is already clean and ready to use.**
 
 These scripts are for reference if you want to preprocess the original Kaggle dataset yourself.
 
+> **Note:** the examples below use `dataset.csv` to mean the raw file downloaded from the original Kaggle dataset. Don't run them on the preprocessed `data/dataset.csv`
+
 ### Master Pipeline - Run All Steps at Once
 
-Run all four preprocessing steps in one command using preprocess_all.py:
+Run all four preprocessing steps in one command using `preprocess_all.py`:
 
 ```bash
-# Process data with defaults (reads dataset.csv, outputs dataset_preprocessed.csv)
+# Process data with defaults
 python src/preprocess_all.py
 
 # Preview all changes without applying them
 python src/preprocess_all.py --check
 
 # Use custom input/output filenames
-python src/preprocess_all.py --input raw_data.csv --output cleaned_data.csv
+python src/preprocess_all.py --input dataset.csv --output cleaned_data.csv
 ```
 
 The pipeline automatically chains the outputs:
@@ -97,23 +101,13 @@ The pipeline automatically chains the outputs:
 3. Redacts phone numbers → `step3_no_phones.csv`
 4. Cleans emojis & problematic characters → final output
 
-**Example output:**
-```
-✅ Step 1: Removed 35 duplicate tweets (499 → 464 rows)
-✅ Step 2: Converted numeric Class values to text labels
-✅ Step 3: Redacted 238 phone numbers from 211 tweets
-✅ Step 4: Cleaned 303 emoji/problematic characters from 311 tweets
-
-✨ Final dataset ready: dataset_preprocessed.csv (464 rows, clean format)
-```
-
 ---
 
 ### Individual Tools
 
 Four utility scripts are also available for data inspection and targeted cleaning:
 
-### `find_duplicates.py` - Remove Duplicate Tweets
+#### `find_duplicates.py` - Remove Duplicate Tweets
 ```bash
 # Check for duplicates without removing them
 python src/find_duplicates.py --input dataset.csv --check
@@ -125,7 +119,7 @@ python src/find_duplicates.py --input dataset.csv
 python src/find_duplicates.py --input dataset.csv --output deduped.csv --apply
 ```
 
-### `rename_columns.py` - Convert Class Labels to Text
+#### `rename_columns.py` - Convert Class Labels to Text
 ```bash
 # Check for numeric Class values without converting
 python src/rename_columns.py --input dataset.csv --check
@@ -137,11 +131,7 @@ python src/rename_columns.py --input dataset.csv
 python src/rename_columns.py --input dataset.csv --output dataset_labeled.csv --apply
 ```
 
-**Conversion Mapping:**
-- `0.0` → `"Negatif İçerik"` (negative/unrelated content)
-- `1.0` → `"Yardım Çağrısı"` (help requests)
-
-### `remove_phones.py` - Redact Phone Numbers
+#### `remove_phones.py` - Redact Phone Numbers
 ```bash
 # Check for phone numbers without redacting
 python src/remove_phones.py --input dataset.csv --check
@@ -153,7 +143,7 @@ python src/remove_phones.py --input dataset.csv
 python src/remove_phones.py --input dataset.csv --output phones_clean.csv --apply
 ```
 
-### `clean_text.py` - Remove Emojis & Problematic Characters
+#### `clean_text.py` - Remove Emojis & Problematic Characters
 ```bash
 # Check for Unicode issues and emojis
 python src/clean_text.py --input dataset.csv --check
@@ -166,10 +156,10 @@ python src/clean_text.py --input dataset.csv --output text_clean.csv --apply
 ```
 
 **All tools support:**
-- `--input <filename>` — specify input CSV file (default: `dataset.csv`)
-- `--output <filename>` — specify output CSV file (default: depends on script)
-- `--check` — inspect issues without modifying data
-- `--apply` — actually perform the operation and save results
+- `--input <filename>` - specify input CSV file (default: `dataset.csv`)
+- `--output <filename>` - specify output CSV file (default: depends on script)
+- `--check` - inspect issues without modifying data
+- `--apply` - actually perform the operation and save results
 
 ## Requirements
 
@@ -183,9 +173,9 @@ Python packages:
 - `langchain-chroma`
 - `pandas`
 
-**AI models** (downloaded once via Ollama, then run locally for free):
-- [`RefinedNeuro/Turkcell-LLM-7b-v1`](https://ollama.com/RefinedNeuro/Turkcell-LLM-7b-v1) — a Turkish-language model that writes the answers
-- [`mxbai-embed-large`](https://ollama.com/library/mxbai-embed-large) — the model that helps search tweets by meaning rather than exact keywords
+AI models (downloaded once via Ollama, then run locally for free):
+- [`RefinedNeuro/Turkcell-LLM-7b-v1`](https://ollama.com/RefinedNeuro/Turkcell-LLM-7b-v1) - a Turkish-language model that writes the answers
+- [`mxbai-embed-large`](https://ollama.com/library/mxbai-embed-large) - the model that helps search tweets by meaning rather than exact keywords
 
 ## Installation
 
@@ -200,12 +190,6 @@ ollama pull mxbai-embed-large
 # 3. Install Python dependencies
 pip install -r requirements.txt
 ```
-
-**Dataset:** Download the preprocessed tweet dataset from Kaggle:
-[Turkey Earthquake Relief Tweets Dataset](https://www.kaggle.com/datasets/onatkaya1/turkey-earthquake-relief-tweets-dataset)
-
-Extract `dataset.csv` and place it at `data/dataset.csv`. The dataset is pre-processed and ready to use, as previously mentioned.
-
 
 ## How to run it
 
@@ -223,5 +207,5 @@ Everything runs locally, so there's no per-question cost and your data never lea
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
-The preprocessed and original dataset are Creative Commons licensed.
+The preprocessed and original datasets are Creative Commons licensed.
 
