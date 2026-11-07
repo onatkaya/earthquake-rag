@@ -1,4 +1,4 @@
-# EarthquakeRAG: AI-based Turkey 2023 Earthquake Tweet Assistant
+# EarthquakeRAG: AI-based Assistant for Turkey 2023 Earthquake
 
 ![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue?style=flat-square)
 ![LangChain](https://img.shields.io/badge/LangChain-RAG-brightgreen?style=flat-square)
